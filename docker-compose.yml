@@ -1,0 +1,41 @@
+# Docker Compose file format version
+version: "3.9"
+
+# Define all application services (containers)
+services:
+  # PostgreSQL database service
+  db:
+    # Use official Postgres v16 image
+    image: postgres:16
+    # Name of the database container
+    container_name: price-db
+    # Automatically restart DB unless manually stopped
+    restart: unless-stopped
+    # Environment variables to initialize Postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # Persist Postgres data using a named volume
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  # Worker service (fetcher) that inserts data into the DB
+  worker:
+    # Build worker image from Dockerfile in current directory
+    build: .
+    # Name of the worker container
+    container_name: price-worker
+    # Ensure database starts before the worker
+    depends_on:
+      - db
+    # Run worker once and do not restart it
+    restart: "no"     # run once then exit
+    # Load environment variables from .env file
+    env_file:
+      - .env
+
+# Declare named volumes used by services
+volumes:
+  # Named volume for persistent database storage
+  db-data:
